@@ -1,0 +1,585 @@
+\documentclass[answers]{exam}
+\usepackage{listings, lstautogobble}
+\usepackage{color}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{qtree}
+\usepackage{tabu}
+
+\renewcommand{\O}[1]{\mathcal{O}\left(#1\right)}
+\allowdisplaybreaks
+
+\begin{document}
+    \shadedsolutions
+    \lstset{autogobble=true, commentstyle=\ttfamily}
+    \definecolor{SolutionColor}{rgb}{0.95,0.95,0.95}
+
+    \begin{center}
+        \textbf{COL100 Assignment 4}\\
+        Arpit Saxena\\
+        2018MT10742\\
+        Group 29
+    \end{center}
+
+    \begin{questions}
+        \question{
+            Consider the ML function for computing the number of ways a rook can travel from the bottom
+            left corner to the top left corner in a \(p \times q\) chess board:
+            \begin{lstlisting}[language=ML]
+            fun rook(p,q) =
+                if ((p = 1) orelse (q = 1)) then 1
+                else rook(p-1,q) + rook(p,q-1);
+    
+            fun C(m,n) = 
+                if ((m = n) orelse (n = 0)) then 1
+                else C(m-1,n-1) + C(m-1,n);
+    
+            fun rook1(p,q) = C(p+q-2,p-1);
+            \end{lstlisting}
+
+            \begin{parts}
+                \part{
+                    Analyse the correctness of the function.
+
+                    \begin{solution}
+                        Considering the \lstinline{rook} function, let \(N = p + q - 2\) be the induction variable.
+
+                        \begin{itemize}
+                            \item{
+                                \textbf{To Prove:} \(S \equiv\) \lstinline{rook(p, q)} computes the number of ways a rook can travel from the
+                            bottom left corner to the top left corner in a \(p \times q\) chess board; \(p \geq 0, q \geq 0\)
+                            }
+
+                            \item{
+                                \textbf{Base case: } \(N = 0\) \\
+                                Since \(p \geq 1, q \geq 1; N = 0 \implies p = 1, q = 1\)
+                                In a \(1 \times 1\) board, there's only one way for rook to go from start to end i.e. to stay
+                                at the same place.
+                            }
+
+                            \item{
+                                \textbf{Induction Hypothesis: } \(S = S(N)\) is true for all \(p, q\) such that \(p + q = N\)
+                            }
+
+                            \item{
+                                \textbf{Induction Step: } Consider any \(p, q\) such that \(p + q = N + 1\)
+                                \begin{enumerate}
+                                    \item{
+                                        If \(q = 1\) or \(p = 1\), then rook has only one way to go from start to end.
+                                        Also, \lstinline{rook(p, q) = 1} if \(p = 1\) or \(q = 1\)
+                                    }
+                                    \item{
+                                        If \(p \neq 1\) and \(q \neq 1\): Backtracking from rook's final position, \((p, q)\),
+                                        it could have got there from \((p, q - 1)\) or \((p -1, q)\) only.
+                                        By the fundamental principle of counting, the ways to get from (1,1) to (p, q) equal
+                                        the sum of the ways to get from (1,1) to (p - 1, q) and ways to get from (1, 1) to
+                                        (p, q - 1). By the induction hypothesis, rook(p, q - 1) and rook(p - 1, q) equal 
+                                        the number of ways for rook to get from (1, 1) to (p, q - 1) and (p - 1, q) respectively,
+                                        rook(p, q) = rook(p, q - 1) + rook(p - 1, q) equals the number of ways to go from (1, 1) to (p, q)
+                                    }
+                                \end{enumerate}
+                                \(\therefore S(N) \implies S(N + 1)\)
+                            }
+                        \end{itemize}
+                    \(\therefore\)The statement S was proven true by the principle of mathematical induction.
+
+                    Now, we will show that \(rook1 \equiv rook\) and it is thus correct.\\
+                    We have, \lstinline{fun rook1(p,q) = C(p+q-2,p-1);} 
+
+                    \begin{itemize}
+                        \item {
+                            \textbf{To Prove: } \(S \equiv\) \lstinline{C(p + q - 2, p - 1) = rook(p, q)} \(\forall p, q \geq 1\)\\
+                            We will prove this by induction on \(p + q - 2\)
+                        }
+                        \item {
+                            \textbf{Base Case: } \(p + q - 2 = 0 \implies p = 1, q = 1 \because p, q \geq 1\)\\
+                            For \(p = q = 1\) \lstinline{C(p + q - 2, p - 1) = C(0, 0) = 1}\\
+                            \lstinline{rook(p, q) = rook(1, 1) = 1}
+                            So, S is true in the base case.
+                        }
+                        \item {
+                            \textbf{Induction hypothesis: } \(S = S(N)\) is true for all \(p, q\) such that \(p + q = N\)
+                        }
+                        \item {
+                            \textbf{Induction step: } Consider any \(p, q \text{such that} p + q = N + 1\)
+                            \begin{equation*}
+                                    \text{Then, } C(p + q - 2, p - 1) = \begin{cases}
+                                        1 \text{ if } p + q - 2 = p - 1 \text{ or } p - 1 = 0 \implies p = q = 1\\
+                                        C((p - 1) + q - 2, (p - 1) - 1) + C(p + (q - 1) - 2, p - 1)
+                                    \end{cases}
+                            \end{equation*}
+
+                            Now, by the induction hypothesis:
+                            \begin{equation*}
+                                    C((p - 1) + q - 2, (p - 1) - 1) + C(p + (q - 1) - 2, p - 1) = rook(p - 1, q) + rook(p, q - 1)
+                            \end{equation*}
+                            \begin{equation*}
+                                \therefore C(p + q - 2, p - 1) = \begin{cases}
+                                    1 \text{ if } p = 1 \text{ or } q = 1\\
+                                    rook(p - 1, q) + rook(p, q - 1)
+                                \end{cases} = rook(p, q)
+                            \end{equation*}
+
+                            \(\therefore S(N) \implies S(N + 1)\)
+                        }
+                    \end{itemize}
+                    So, by the principle of mathematical induction, S is true \(\forall N \in \mathbb{N}\)
+                    That is, \(rook1 \equiv rook\) and is thus correct. All the time and space complexity analysis is the same for
+                    rook1 and rook. So, we have only done the analysis for rook function. (Note that there is an additional storage
+                    requirement in rook1 but since it is constant, the asymptotic space complexity is the same.)    
+                    \end{solution}
+                }
+
+            \part{
+                Estimate its time and space complexity.
+                \begin{solution}
+                    \begin{itemize}
+                        \item{
+                            \textbf{Time Complexity: }
+
+                            We estimate time complexity by the number of function calls made. So, we have the following recurrence:
+                            \begin{equation*}
+                                T(p, q) = 
+                                \begin{cases}
+                                    0 \text{ if } p = 1 \text{ or } q = 1\\
+                                    2 + T(p -1, q) + T(p, q - 1) \text{ otherwise}
+                                \end{cases}
+                            \end{equation*}
+
+                            Let \(p \geq 1\) then
+                            \begin{equation*}
+                                \begin{aligned}
+                                    T(p, 1) &= 0\\
+                                    T(p, 2) &= 2 + T(p - 1, 2) + \cancelto{0}{T(p, 1)}\\
+                                            &= 4 + T(p - 2, 2)\\
+                                            &= 2k + T(p - k, 2)\\
+                                            &= 2(p - 1) + \cancelto{0}{T(1, 2)}\\
+                                            &= 2(p - 1)\\
+                                    T(p, 3) &= 2p + T(p - 1, 3) \\
+                                            &= 2 \{p + (p - 1) + \cdots + 2\} + \cancelto{0}{T(1, 3)}\\
+                                            &= 2 \left\{\frac{p(p+1)}{2} - 1\right\} \\
+                                            &= 2 \,^{p + 1}C_2 - 2
+                                \end{aligned}
+                            \end{equation*}
+
+                            This leads to hypothesise that \(T(p, q) = 2 \, ^{p + q - 2}C_{q - 1} - 2 \,\forall p, q \geq 1\)
+
+                            Assuming that it is true \(\forall p, q \text{ such that } p + q = N\), consider another \(p, q \text{ such
+                            that } p + q = N + 1\); then
+                            \begin{equation*}
+                                \begin{aligned}
+                                    T(p, q) &= 2 + T(p - 1, q) + T(p, q - 1) \\
+                                            &= 2 + 2 \,^{p + q - 3}C_{q - 1} - 2 + 2 \,^{p + q - 3}C_{q - 2} - 2 \\
+                                            &= 2 \, ^{p + q - 2}C_{q - 1} - 2
+                                \end{aligned}
+                            \end{equation*}
+                            This proves that \(T(p, q) = 2 \, ^{p + q - 2}C_{q - 1} - 2 \,\forall p, q \geq 1\)
+
+                            \begin{equation*}
+                                \begin{aligned}
+                                    \frac{n!}{(n - k)!} &= n(n - 1)\dots(n - k + 1) = \O{n^k}\\
+                                    \implies ^nC_k &= \frac{n!}{k!(n - k)!} \\
+                                                   &= \O{\frac{n^k}{k!}} \\         
+                                    \text{Now, } T(p, q) &= ^{p + q - 2}C_{q - 1} - 2\\
+                                    &\text{We know that binomial coefficients are maximum in the middle}\\
+                                    T(p, q) &= \O{(2p - 2)C_{p - 1}} \\
+                                            &= \O{\frac{(2p - 2)^{p - 1}}{(p - 1)!}}\\
+                                            &= \O{2^{p - 1} \frac{(p - 1)^{p - 1}}{(p - 1)!}}\\
+                                            &= \O{2^p}
+                                \end{aligned}
+                            \end{equation*}
+                            So, the time complexity is \(\O{2^p}\) in the worst case.
+                        }
+                    
+                    \newpage
+
+                    \item {
+                        \textbf{Space Complexity: }
+
+                        We are considering the space complexity as the maximum space the program would require at one point of time.
+                        Being a recursive algorithm, we observe that extra storage is required when the recursive calls are made and
+                        the computations have to deferred. So, we find the length of the longest branch of function calls and the space
+                        required for those would give us the space complexity. We observe that following is the longest branch of function
+                        calls:
+
+                        \Tree 
+                        [.{rook(p, q)} 
+                            [.{rook(p - 1, q)} 
+                                [.{rook(p - 2, q)} 
+                                    [.{\(\cdots\)} 
+                                        [.{rook(2, q)} 
+                                            [.{rook(1, q)} ] 
+                                            [.{rook(2, q - 1)} 
+                                                [.{rook(2, q - 2)} 
+                                                    [.{\(\cdots\)} 
+                                                        [.{rook(2, 1) = 1} ]
+                                                    ] 
+                                                ] 
+                                            ] 
+                                        ] 
+                                    ] 
+                                ] 
+                            ] 
+                            [.{\(\cdots\)} ] 
+                        ]
+
+                        This branch has a length of \((p - 1) + (q- 1) = p + q - 2\), and each function call requires 2 units of storage.
+                        \begin{equation*}
+                            \begin{aligned}
+                                \text{So, } S(p, q) &= 2 \times (p + q - 2) \\
+                                                    &= 2p + 2q - 4 \\
+                                                    &= \O{p + q} \\
+                            \end{aligned}
+                        \end{equation*}
+
+                        \(\therefore \text{Space complexity} = \O{p + q}\)
+                    }
+                    \end{itemize}
+                \end{solution}
+            }
+            \part Work out a more efficient iterative version. (Hint: Read about Pascal's triangle).
+            \part Develop a Python program for your iterative algorithm.
+            \begin{solution}
+                Following is the python program for iterative algorithm:
+                \begin{lstlisting}[language=Python]
+                    def choose(n, m):
+                        a = [1]
+                        i = 0
+                            
+                        #INV: For all 0 <= r <= i, a[r] = (i)choose(r); 0 <= i <= n
+                        while i < n:
+                            new_a = [0] * (i + 2)
+                            j = 1
+                            new_a[0] = 1
+                            new_a[i + 1] = 1
+                            
+                            #INV: for k in [0..j-1] new_a[k] = (i + 1)choose(k); 1<=j<=i+1
+                            while(j <= i):
+                                new_a[j] = a[j] + a[j - 1]
+                                #(i + 1)Cj = iCj + iC(j - 1)
+                                j += 1
+
+                            #assert: for k in [0..i+1] new_a[k] = (i + 1)choose(k)   
+                            i += 1
+
+                            a = new_a
+
+                        #assert: For all 0 <= r <= n, a[r] = (n)choose(r)
+                        return a[m]
+
+                    def rook(p, q):
+                        #To find: (p + q - 2) C (q - 1)
+                        return choose(p + q - 2, q - 1)
+                \end{lstlisting}
+
+                Proof of correctness is encoded in the invariants and assertions written as comments
+                in the code. We now find the algorithms time and space complexities:
+
+                \begin{itemize}
+                    \item {
+                        \textbf{Time Complexity: } Since the main work is done in the choose function, we first evaluate
+                        its time complexity. For a particular \(i\), the inner \lstinline{while} loop
+                        runs \(i\) times. There are 2 statements in this inner while loop.
+                        So, there are \(6 + 2i\) statements executed for a particular \(i\) in the outer while loop.
+                        Assuming each statement to take same, constant time.
+                        \begin{equation*}
+                            \begin{aligned}
+                                T'(m, n) &= \sum_{i = 0}^{n}{6 + 2i} \\
+                                    &= 6(n + 1) + 2n(n + 1)\\
+                                    &= 2(n + 1)(n + 3)\\
+                                    &= \O{n^2}
+                            \end{aligned}
+                        \end{equation*}
+                        Since \lstinline{rook(p, q) = choose(p + q - 2, q - 1)}, \\
+                        \(T(p, q) = T'(p + q - 2, q - 1) = \O{(p + q - 2)^2} = \O{(p + q)^2}\)
+                    }
+                    \item {
+                        \textbf{Space Complexity: } It is easily observable that the maximum storage required
+                        by the program at any point of time will be due to array a or new\_a, which would clearly
+                        be \(\O{n}\). \\
+                        So, \(S'(m, n) = \O{n}\)
+                        \(\implies S(p, q) = S'(p + q - 2, q - 1) = \O{p + q - 2} = \O{p + q}\)                     
+                    }
+                \end{itemize}
+                We observe that for the same asymptotic space complexity, this iterative algorithm has a quadratic
+                time complexity while the recursive one has exponential, implying that this algorithm is quite a bit
+                more efficient than the recursive one.
+            \end{solution}
+            \end{parts}
+        }
+    
+    \question Suppose you have an infinite supply of coins of denomination 50p, 25p, 10p, 5p and 1p. In how many ways
+    can you generate change for a given amount, say for 100p?
+        \begin{parts}
+            \part Consider this ML function for the problem and analyse its correctness and efficiency.
+            \begin{lstlisting}[language=ML]
+                exception OnlyFiveTypesOfCoins;
+                fun denom n =
+                    if n = 1 then 1
+                    else if n = 2 then 5
+                    else if n = 3 then 10
+                    else if n = 4 then 25
+                    else if n = 5 then 50
+                    else raise OnlyFiveTypesOfCoins;
+
+                fun coin(m,n) =
+                    if (m < 0) orelse (n = 0) then 0
+                    else if (m=0) then 1
+                    else coin(m,n-1)+coin(m-denom(n),n);
+            \end{lstlisting}
+
+            \begin{solution}
+                \begin{itemize}
+                    \item {
+                        \textbf{Correctness: }\\
+                        Considering the \lstinline{coin} function, let \(N = m + n\) be the induction variable.
+
+                        \begin{itemize}
+                            \item{
+                                \textbf{To Prove:} \(S \equiv\) \lstinline{coin(m, n)} computes the number of ways to generate change
+                                for an amount \(m\) using \(n\) coins, which are given by \(denom(1), denom(2), \ldots, denom(n) 
+                                \text{ if } n > 0 \); \(m, n \geq 0\)
+                            }
+
+                            \item{
+                                \textbf{Base case: } \(N = 0\) \\
+                                Since \(n \geq 0, m \geq 0, m + n = 0 \implies m = n = 0 \)
+                                There is no way to generate change for amount 0 using 0 coins, since we don't have any coins left.
+                                We also see that \lstinline{rook(0, 0) = 0}.
+                                \(\therefore S\) holds for the base case
+                            }
+
+                            \item{
+                                \textbf{Induction hypothesis: } \(S = S(N)\) is true for all \(m, n \geq 0\) for which \(m + n \leq N\)
+                            }
+
+                            \item{
+                                \textbf{Induction step: } Consider any \(m, n \geq 0\) such that \(m + n = N + 1\)
+                                \begin{itemize}
+                                    \item {
+                                        \(m \leq 0\): There is no way to generate a negative amount using coins of positive denominations.
+                                        Also, \lstinline{rook(m, n) = 0} if \(m < 0\)
+                                    }
+                                    \item {
+                                        \(n = 0\): We can't generate any change without having any coins. \\
+                                        Also, \lstinline{rook(m, 0) = 0}.
+                                    }
+                                    \item {
+                                        \(n \neq 0 \text{ and } m = 0\): In this case, we have a positive number of denominations to choose
+                                        from and we have to generate 0 amount of change. This can be done by choosing 0 coins of all denominations
+                                        available to us, i.e. in one way.
+                                        We also see that \lstinline{rook(0, n) = 1} if \(n \neq 0\)
+                                    }
+                                    \item {
+                                        \(n  > 0 \text{ and } m > 0\): We have to generate change for a non-zero amount using some positive number
+                                        of denominations available to use. At this step, we can either choose to use a coin of the \(n^{th}\)
+                                        denomination or to not use a coin of that denomination. By the law of excluded middle, there can only be 
+                                        these two possibilities.
+                                        \begin{itemize}
+                                            \item {
+                                                In the first case, the amount decreases by \(d(n)\) and the number of denominations available remain
+                                                the same. So, the number of ways to generate change in this case is equal to ways for generating 
+                                                change for amount \(m - d(n)\) with \(n\) coins.
+                                                We observe that \((m - d(n)) + n <= m + n - 1 (\because d(n) >= 1)\)
+                                                \(\implies (m - d(n)) + n <= N\), for which the number of ways is given by \lstinline{rook(m - d(n), n)}
+                                                (by the induction hypothesis) \\
+                                                \(\therefore\) Number of ways in this case = \lstinline{rook(m - d(n), n)}
+                                            }
+                                            \item {
+                                                In the second case, the amount remains the same and the number of denominations available for use decreases
+                                                by one, i.e. they become \(n - 1\).
+                                                We observe that \(m + (n - 1) = N \leq N\), for which the number of ways is given by \lstinline{rook(m, n - 1)}
+                                                (by the induction hypothesis) \\
+                                                \(\therefore\) Number of ways in this case = \lstinline{rook(m, n - 1)}
+                                            }
+                                        \end{itemize}
+
+                                        Since these are cases, by the fundamental law of counting, total number of ways = rook(m - d(n), n) + rook(m, n - 1).
+                                        We observe that the program also returns the same thing.
+                                    }
+                                \end{itemize}
+                            }
+                            \(\therefore S(N) \implies S(N + 1)\)
+                        \end{itemize}
+                        By the principle of mathematical induction, \(S\) is true \(\forall m, n \geq 0\)\\
+                        This proves the correctness of the algorithm.
+                    }
+                    \item {
+                        \textbf{Efficiency: }
+                        \begin{itemize}
+                            \item {
+                                \textbf{Time comlpexity: } We estimate time complexity by the number of function calls made. So, we have the following
+                                recurrence:
+                                \begin{equation*}
+                                    T(m, n) = \begin{cases}
+                                        0 \text{ if } m \leq 0 \text{ or } n = 0 \\
+                                        2 + T(m, n - 1) + T(m - d(n), n) \text{ otherwise}
+                                    \end{cases}
+                                \end{equation*}
+
+                                Since the function calls would stop when \(m \leq 0\) which decreases by d(n) each time, we observe that the worst case
+                                (maximum number of function calls) would be when all the denominations available would be 1. So, the worst case would be
+                                when \(d(n) = 1 \forall n \geq 1\). Assuming this, our recurrence simplifies as:
+                                \begin{equation*}
+                                    T(m, n) = \begin{cases}
+                                        0 \text{ if } m \leq 0 \text{ or } n = 0 \\
+                                        2 + T(m, n - 1) + T(m - 1, n) \text{ otherwise}
+                                    \end{cases}
+                                \end{equation*}
+
+                                Let \(m \geq 0\), then:
+                                \begin{align*}
+                                    T(m, 0) &= 0 \\
+                                    T(m, 1) &= 2 + \cancelto{0}{T(m, 0)} + T(m - 1, 1) \\
+                                        &= 2 + T(m - 1, 1) \\
+                                        &= 4 + T(m - 2, 1) \\
+                                        &= 2m + \cancelto{0}{T(m - m, 1)} \\
+                                        &= 2m \\
+                                        &= \O{m} \\
+                                    T(m, 2) &= 2 + T(m, 1) + T(m - 1, 2)\\
+                                        &= 2 + 2m + T(m - 1, 2)\\
+                                        &= 2(m + 1) + T(m - 1, 2)\\
+                                        &= 2(m + 1) + 2m + T(m - 2, 2)\\
+                                        &= 2\{(m + 1) + m + \ldots + 2\} + \cancelto{0}{T(0, 2)}\\
+                                        &= \frac{(m + 1)(m + 2)}{2} - 2\\
+                                        &= \O{m^2}\\
+                                    T(m, 3) &= 2 + T(m, 2) + T(m - 1, 3)\\
+                                        &= 2 + \O{m^2} + T(m - 1, 3)\\
+                                        &= \O{m^2} + T(m - 1, 3)\\
+                                    \implies T(m, 3) &= \O{m^3}
+                                \end{align*}
+
+                                This leads us to hypothesise that \(T(m, n) = \O{m^n}\). Let it be true for
+                                all \(m, n\) such that \(m + n = N\).
+                                Consider any \(m, n\) for which \(m + n = N + 1\).
+                                \begin{align*}
+                                    T(m, n) &= 2 + T(m, n - 1) + T(m - 1, n)\\
+                                        &= 2 + \O{m^{n - 1}} + \O{(m - 1)^n} \text{(By Induction hypothsis)} \\
+                                        &= \O{m^n}
+                                \end{align*}
+                                This proves that \(T(m, n) = \O{m^n} \forall m, n \geq 0\)\\
+                                \(\therefore\) Time complexity = \(\O{m^n}\)
+                            }
+                        \end{itemize}
+                        \item {
+                            \textbf{Space complexity: }\\
+                            We are considering the space complexity as the maximum space the program would require
+                            at one point of time. Being a recursive algorithm, we observe that extra storage is required
+                            when the recursive calls are made and the computations have to deferred. So, we find the
+                            length of the longest branch of function calls and the space required for those would give us
+                            the space complexity. We observe that following is the longest branch of function calls:
+
+                            \Tree 
+                            [.{coin(m, n)}
+                                [.{coin(m, n - 1)} 
+                                    [.{coin(m, n - 2)} 
+                                        [.{\(\cdots\)} 
+                                            [.{coin(m, 1)} 
+                                                [.{coin(m, 0) = 0} ]
+                                                [.{coin(m - 1, 1)} 
+                                                    [.coin{(m - 2, 1)} 
+                                                        [.{\(\cdots\)} 
+                                                            [.{coin(1, 1)} 
+                                                                [.{coin(0, 1) = 1} ] 
+                                                            ] 
+                                                        ] 
+                                                    ]
+                                                ] 
+                                            ] 
+                                        ] 
+                                    ] 
+                                ] 
+                                [.{\(\cdots\)} ] 
+                            ]
+
+                            This branch has a length of m + n, and each function call requires 2
+                            units of storage.
+                            \begin{align*}
+                                S(m, n) &= 2(m + n) \\
+                                    &= \O{m + n}
+                            \end{align*}
+
+                            \(\therefore \text{ Space complexity } = \O{m + n}\)
+                        }
+                    }
+                \end{itemize}
+            \end{solution}
+
+            \part Show that a suitably defined iterative function will be more efficient for the given problem.
+            \part Develop a Python program for your iterative algorithm.
+
+            \begin{solution}
+                Following is the python program for iterative algorithm:
+                \begin{lstlisting}[language=Python]
+                    #Finds number of ways to give a change for 'total' amount using
+                    #denominations given in 'denom' list
+                    def coin(total, denom):
+                        #assert: total >= 0 and denom is an array with positive
+                        #integer values
+                        n = len(denom)
+
+                        ways = [0] * (total + 1)
+                        j = 0
+                        ways[0] = 1
+                        #INV: for i in [0..total] ways[i] is the number of ways to 
+                        #generate change i using j types of coins, 0 <= j <= n
+                        while j < n:
+                            k = 0
+                            #INV: for i in [0..k - 1], ways[i] is the number of ways
+                            # to generate
+                            #change i using j + 1 types of coins; 0 <= k <= total + 1
+                            while k <= total:
+                                if k >= denom[j]:
+                                    ways[k] = ways[k - denom[j]] + ways[k]
+                                k = k + 1		
+
+                            #assert: for i in [0..total], ways[i] is the number of ways
+                            # to generate
+                            #change i using j + 1 types of coins
+                            j = j + 1
+
+                        #assert: for i in [0..total] ways[i] is the number of ways to 
+                        # generate change i
+                        return ways[total]
+                \end{lstlisting}
+
+                We will now show that this iterative version is more efficient than the
+                given recursive version. We will denote \lstinline{total} as \(m\) and 
+                \lstinline{len(denom)} as \(n\) for the sake of consistency between the
+                iterative and recursive versions.
+                \begin{itemize}
+                    \item {
+                        \textbf{Time Complexity: } The inner while loop runs a total of
+                        \(m + 1\) times and in the worst case, 3 statments would be executed
+                        each time.
+                        So, there are \(2 + 3m\) statements run in the outer while loop. That
+                        loop runs \(n\) times. So the total statements run is \(n \times (2 + 3m)
+                        = 2n + 3mn = \O{mn}\).\\
+                        \(\therefore\) Time complexity = \(\O{mn}\)
+                    }
+                    \item {
+                        \textbf{Space complexity: } It can be easily observed that the variable
+                        space is required by the \lstinline{ways} list, making the space 
+                        complexity \(O(n)\)
+                    }
+                \end{itemize}
+
+                Here, we compare the time and space complexities of the two versions side by side:
+                \begin{center}
+                \tabulinesep=1.2mm
+                \begin{tabu}{ |c|c c| }
+                    \hline
+                     & \textbf{Recursive} & \textbf{Iterative} \\
+                     \hline
+                     \textbf{Time complexity} & \(\O{m^n}\) & \(\O{mn}\) \\
+                     \textbf{Space comlpexity} & \(\O{m + n}\) & \(\O{n}\) \\
+                     \hline
+                \end{tabu}
+                \end{center}
+
+                This shows that the iterative version is more efficient than the iterative version
+            \end{solution}
+        \end{parts}
+    \end{questions}
+\end{document}
