@@ -1,0 +1,141 @@
+\documentclass[answers]{exam}
+\usepackage{listings, lstautogobble}
+\usepackage{color}
+\usepackage{cancel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{qtree}
+\usepackage{tabu}
+
+\renewcommand{\O}[1]{\mathcal{O}\left(#1\right)}
+\allowdisplaybreaks
+
+\begin{document}
+    \shadedsolutions
+    \lstset{autogobble=true, commentstyle=\ttfamily}
+    \definecolor{SolutionColor}{rgb}{0.95,0.95,0.95}
+
+    \begin{center}
+        \textbf{COL100 Assignment 5}\\
+        Arpit Saxena\\
+        2018MT10742\\
+        Group 29
+    \end{center}
+
+    \begin{questions}
+        \question Derive the proof that in the average case, the running time complexity of quick sort is \(\O{n \log n}\)
+        \begin{solution}
+            For deriving the time complexity, we'll refer to the following implementation for quick sort:
+            \begin{lstlisting}[language=Python]
+                def partition(a, left, right):
+                    elem = a[right]
+                    i = left
+                    j = right
+                    #INV: a[left..i-1] < elem <= a[j+1..right], left <= pos <= right
+                    while i <= j:
+                        if a[j] >= elem:
+                            j -= 1
+                        else:
+                            a[i], a[j] = a[j], a[i]
+                            i += 1
+
+                    a[j + 1], a[right] = a[right], a[j + 1]
+                    pos = j + 1
+
+                    #assert: a[left..pos-1] < a[pos] <= a[pos+1..right], 
+                    # left <= pos <= right
+                    return pos
+
+                def qsort(a, left, right):
+                    #assert: a is an array
+
+                    if left < right:
+                        pos = partition(a, left, right) 
+                            #assert: partitioned with right element as pivot.
+                            #pos indicates the position of pivot in partitioned array
+                            #   a[left..pos-1] < a[pos] <= a[pos+1..right], 
+                            # left <= pos <= right
+                        qsort(a, left, pos - 1)
+                        qsort(a, pos + 1, right)
+                    
+                    #assert: a[left..right] is sorted
+
+                def quicksort(a):
+                    qsort(a, 0, len(a) - 1)
+                    #assert: a[0..len(a)-1] is sorted
+                    return a
+            \end{lstlisting}
+
+            We define \(n = right - left + 1\). Clearly, the average time complexity of
+            quick sort only depends on \(n\).
+
+            First, we look at the partition function. We observe that the while loop runs exactly
+            \(n\) times irrespective of the contents of a.\\
+             \(\therefore \text{Partition function takes } \O{n} \) time.
+
+            Let \(T(n)\) denote the time complexity of the qsort function.
+            Then, we have the following recurrence:
+            \begin{equation*}
+                T(n) =
+                \begin{cases}
+                    0 \text{ if } n = 1 \\
+                    \O{n} + T(p) + T(n - p - 1) \text{ otherwise}
+                \end{cases}
+            \end{equation*}
+            Here, \(p = pos - left\) denotes the size of the left partitioned array and
+            thus, \(n - p - 1\) denotes the size of the right partitioned array.
+
+            We note that sizes of the partitioned arrays would depend on where the element we are
+            partitioning with respect to ends up at.
+            On random data, there is equal chance for the partition to be at any place in the array.
+            There, on average
+            \begin{equation*}
+                T(n) =
+                \begin{cases}
+                    0 \text{ if } n = 1 \\
+                    \O{n} + \dfrac{1}{n}\displaystyle
+                    \sum_{p=0}^{n-1}{T(p) + T(n - p - 1)} \text{ otherwise}
+                \end{cases}
+            \end{equation*}
+
+            For \(n > 1\),
+            \begin{equation*}
+                \begin{aligned}
+                    T(n) &= cn + \dfrac{1}{n}\sum_{p=0}^{n-1}{T(p) + T(n - p - 1)} \\
+                         &= cn + \dfrac{2}{n}\sum_{p=0}^{n-1}{T(p)} \\    
+                    nT(n) &= cn^2 + 2\sum_{p=0}{n - 1}{T(p)} \\
+                    (n - 1)T(n - 1) &= c(n - 1)^2 + 2\sum_{p=0}{n - 2}{T(p)} \\
+                    nT(n) - (n-1)T(n-1) &= c(2n - 1) + 2T(n - 1) \\
+                    \text{ Dropping the } &-c \text{ as it is a constant and won't have any effect on the order} \\   
+                    nT(n) - (n-1)T(n-1) &= 2cn + 2T(n - 1) \\
+                    nT(n) - (n + 1)T(n - 1) &= 2cn \\
+                \end{aligned}
+            \end{equation*}
+
+            \begin{equation*}
+                \begin{aligned}
+                    \frac{T(n)}{n+1} - \frac{T(n-1)}{n} &= \frac{2c}{n + 1} \\
+                    \frac{T(n)}{n} - \frac{T(n-2)}{n-1} &= \frac{2c}{n} \\
+                    \vdots \\
+                    \frac{T(2)}{3} - \frac{\cancelto{0}{T(1)}}{2} &= \frac{2c}{2} \\
+                \end{aligned}
+            \end{equation*}
+
+            Adding the equations, we get
+            \[\frac{T(n)}{n + 1} = 2c\left\{\frac{1}{2} + \frac{1}{3} + \cdots + \frac{1}{n + 1}\right\}
+                \leq 2c\int_{1}^{n}{\frac{1}{x} \text{d}x} = 2c\ln{n}
+            \]
+            Note that the inequality can be easily shown from the graph of \(y = \frac{1}{x}\) and
+            taking the area under it.
+
+            \(\therefore\) In the average case, \(T(n) = \O{n \log{n}}\)
+
+            The taken by the quicksort function would thus be equal to \(T(n)\)
+            where \(n = len(a)\)
+
+            \(\therefore\) Time complexity of quicksort in the average case is equal to
+            \(\O{n \log n}\) where \(n\) is equal to the number of elements to be sorted.
+            \(\blacksquare\)
+        \end{solution}
+    \end{questions}
+\end{document}

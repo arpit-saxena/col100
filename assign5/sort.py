@@ -1,5 +1,4 @@
 def partition(a, left, right):
-	
 	elem = a[right]
 	i = left
 	j = right
@@ -14,15 +13,19 @@ def partition(a, left, right):
 	a[j + 1], a[right] = a[right], a[j + 1]
 	pos = j + 1
 
-	#assert: a[left..pos-1] <= a[pos] < a[pos+1..right], left <= pos <= right
+	#assert: a[left..pos-1] < a[pos] <= a[pos+1..right], 
+	# left <= pos <= right
 	return pos
 
 def qsort(a, left, right):
 	#assert: a is an array
 
 	if left < right:
-		pos = partition(a, left, right) #assert: partitioned with right element as pivot.
+		pos = partition(a, left, right) 
+			#assert: partitioned with right element as pivot.
 			#pos indicates the position of pivot in partitioned array
+			#   a[left..pos-1] < a[pos] <= a[pos+1..right], 
+			# left <= pos <= right
 		qsort(a, left, pos - 1)
 		qsort(a, pos + 1, right)
 	
@@ -30,6 +33,7 @@ def qsort(a, left, right):
 
 def quicksort(a):
 	qsort(a, 0, len(a) - 1)
+	#assert: a[0..len(a)-1] is sorted
 	return a
 
 def merge(a, b):
