@@ -10,7 +10,4 @@ fun fibonacci(n) =
     else if n = 1 then 1
     else fibonacci(n - 1) + fibonacci(n - 2);
 
-factorial(5);
-power(2, 5);
-gcd(12, 18);
-fibonacci(4);
+print(Int.toString (factorial(12)) ^ "\n");
