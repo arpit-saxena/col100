@@ -12,14 +12,29 @@ class Expression:
         return expr
 
     def __add__(self, expr):
-        return Expression.from_sub_exprs(self, '+', expr)
+        expr = Expression.from_sub_exprs(self, '+', expr)
+        expr._simplify()
+        return expr
 
     def __sub__(self, expr):
-        return Expression.from_sub_exprs(self, '-', expr)
+        expr = Expression.from_sub_exprs(self, '-', expr)
+        expr._simplify()
+        return expr
 
     def __mul__(self, expr):
-        return Expression.from_sub_exprs(self, '*', expr)
+        expr = Expression.from_sub_exprs(self, '*', expr)
+        expr._simplify()
+        return expr
 
+    def __truediv__(self, expr):
+        # Checking foir division by zero
+        expr._simplify()
+        if expr._is_atomic() and expr.data == '0':
+            raise Exception("Division by zero!")
+        
+        expr = Expression.from_sub_exprs(self, '/', expr)
+        expr._simplify()
+        return expr
 
     # https://www.journaldev.com/22460/python-str-repr-functions
     def __str__(self):
@@ -35,16 +50,16 @@ class Expression:
     def __repr__(self):
         return str(self)
 
-    def _valid_begin_name_char(self, c):
+    def _valid_name_first_char(self, c):
         return c.isalpha() or c == '_'
 
     def _valid_name_char(self, c):
-        return self._valid_begin_name_char(c) or c.isdigit()
+        return self._valid_name_first_char(c) or c.isdigit()
 
     # Finds a expression in s[begin..] and returns end such that
     # s[begin..end-1] was the smallest complete expression found 
     def _find_sub_expr(self, s, begin):
-        if self._valid_begin_name_char(s[begin]):
+        if self._valid_name_first_char(s[begin]):
             i = begin + 1
             #INV: a[begin..i-1] is a valid identifier, begin <= i <= len(s) - 1
             while i < len(s) and self._valid_name_char(s[i]):
@@ -94,11 +109,9 @@ class Expression:
         if i2 != len(s) - i:
             raise Exception("Malformed expression: '" + s + "'")
         
-        return [
-            s[1:i1],
+        return s[1:i1],
             operator,
             s[i1+1:i2]
-        ]
 
     # Expression is taken as:
     # 1. (expr1 op expr2)
@@ -143,6 +156,8 @@ class Expression:
                 return expr1.differentiate_wrt(x) - expr2.differentiate_wrt(x)
             elif operator == '*':
                 return expr1 * expr2.differentiate_wrt(x) + expr1.differentiate_wrt(x) * expr2
+            elif operator == '/':
+                return (expr2 * expr1.differentiate_wrt(x) - expr1 * expr2.differentiate_wrt(x)) / (expr2 * expr2)
             else:
                 raise Exception("Operator %s not supported!" % operator)
 
@@ -171,6 +186,13 @@ class Expression:
             elif self.data == '-':
                 if self.expr2.data == '0':
                     self._set(self.expr1)
+                elif self.expr1._is_atomic() and self.expr2._is_atomic() and self.expr1.data == self.expr2.data:
+                    self._set(Expression('0'))
+            elif self.data == '/':
+                if self.expr1.data == '0':
+                    self._set(Expression('0'))
+                elif self.expr2.data == '0':
+                    raise Exception("Division by zero!")
 
 s = input("Enter an expression: ")
 e = Expression(s)
