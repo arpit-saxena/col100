@@ -110,8 +110,8 @@ class Expression:
             raise Exception("Malformed expression: '" + s + "'")
         
         return s[1:i1],
-            operator,
-            s[i1+1:i2]
+        operator,
+        s[i1+1:i2]
 
     # Expression is taken as:
     # 1. (expr1 op expr2)
