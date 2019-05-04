@@ -2,7 +2,13 @@
 class Function:
     function_derivatives = {
         'log': lambda arg: Expression('1') / arg,
-        'exp': lambda arg: Expression.from_sub_exprs(None, Expression.Atom(Function('exp', arg)), None),
+        'exp': lambda arg: Expression(Function('exp', arg)),
+        'sin': lambda arg: Expression(Function('cos', arg)),
+        'cos': lambda arg: Expression('(0-1)') * Expression(Function('sin', arg)),
+        'tan': lambda arg: Expression(Function('sec', arg)) ** Expression('2'),
+        'sec': lambda arg: Expression(Function('sec', arg)) * Expression(Function('tan', arg)),
+        'cosec': lambda arg: Expression('(0-1)') * Expression(Function('cosec', arg)) * Expression(Function('cot', arg)),
+        'cot': lambda arg: Expression('(0-1)') * Expression(Function('cosec', arg)) ** Expression('2')
     }
 
     def __init__(self, fname, arg):
