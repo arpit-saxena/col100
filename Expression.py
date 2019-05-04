@@ -118,13 +118,13 @@ class Expression:
             while i < len(s) and self._valid_name_char(s[i]):
                 i += 1
             
-            expr = Expression.from_sub_exprs(None, s[begin:i], None)
+            expr = Expression.from_sub_exprs(None, Expression.Atom(s[begin:i]), None)
 
             if i != len(s) - 1 and s[i] == '(': # Atomic expression
                 arg, i2 = self._find_sub_expr(s, i+1) #assert: s[i+1..i2-1] is an expression
                 if s[i2] != ')':
                     raise Exception("Closing parentheses missing")
-                expr = Function(expr.data, arg)
+                expr = Expression(Expression.Atom(Function(expr.data, arg)))
                 i = i2 + 1
 
         elif s[begin].isdigit():
@@ -133,7 +133,7 @@ class Expression:
             #INV: a[begin..i-1] is a number, begin <= i <= len(s) - 1
             while i < len(s) and s[i].isdigit():
                 i += 1
-            expr = Expression.from_sub_exprs(None, s[begin:i], None)
+            expr = Expression.from_sub_exprs(None, Expression.Atom(s[begin:i]), None)
 
         elif s[begin] == '(':
             i = begin + 1
