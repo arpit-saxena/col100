@@ -141,11 +141,16 @@ class Expression:
                 expr = Expression(Function(str(expr.data), arg))
                 i = i2 + 1
 
-        elif s[begin].isdigit():
+        elif s[begin].isdigit() or s[begin] == '.':
             i = begin + 1
-            #TODO: Add support for decimal point
-            #INV: a[begin..i-1] is a number, begin <= i <= len(s) - 1
-            while i < len(s) and s[i].isdigit():
+            found_decimal = False
+            #INV: a[begin..i-1] is a number, found_decimal <=> a[begin..i-1] has a decimal pt. begin <= i <= len(s) - 1
+            while i < len(s) and (s[i].isdigit() or s[i] == '.'):
+                if s[i] == '.':
+                    if found_decimal:
+                        raise Exception("Illegal numeric part in %s" % s[begin:])
+                    else:
+                        found_decimal = True
                 i += 1
             expr = Expression(Expression.Atom(s[begin:i]))
 
@@ -203,7 +208,7 @@ class Expression:
         else:
             i2 = i1-1
         
-        operator = Expression.Atom(s[i2 + 1]) #TODO: Add support for multi-character operators
+        operator = Expression.Atom(s[i2 + 1]) #Only single character operators are supported
 
         expr2, i3 = self._find_sub_expr(s, i2+2) #assert: expr2 = parsed s[i2+2..i3-1]
 
