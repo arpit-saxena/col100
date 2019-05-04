@@ -1,7 +1,8 @@
 # Represents a one argument function
 class Function:
     function_derivatives = {
-        'log': lambda arg: Expression('1') / arg
+        'log': lambda arg: Expression('1') / arg,
+        'exp': lambda arg: Expression.from_sub_exprs(None, Expression.Atom(Function('exp', arg)), None),
     }
 
     def __init__(self, fname, arg):
@@ -11,8 +12,11 @@ class Function:
     def __str__(self):
         return '%s(%s)' % (self.name, self.arg)
 
+    def __repr__(self):
+        return str(self)
+
     def differentiate_wrt(self, x):
-        if self.name in self.function_derivatives:
+        if self.name in Function.function_derivatives:
             return self.function_derivatives[self.name](self.arg) * self.arg.differentiate_wrt(x)
         else:
             raise Exception("Function '%s' has no derivative defined" % (self.name))
@@ -31,61 +35,65 @@ class Expression:
         def __str__(self):
             return str(self.data)
             
-        
+        def __repr__(self):
+            return str(self)
+
+        def __eq__(self, other):
+            if isinstance(other, Expression.Atom) and isinstance(self.data, str) and isinstance(other.data, str):
+                return self.data == other.data
+            
+            return False
+
         def differentiate_wrt(self, x):
             # https://www.geeksforgeeks.org/type-isinstance-python/
-            if isinstance(data, Function):
-                return data.differentiate_wrt(x)
-            elif data == x:
+            if isinstance(self.data, Function):
+                return self.data.differentiate_wrt(x)
+            elif self.data == x:
                 return Expression('1')
             else:
                 return Expression('0')
 
-    def __init__(self, s = None):
-        if s is None:
+    def __init__(self, s = None, expr1 = None, expr2 = None):
+        if isinstance(s, str):
             self.data = None
             self.expr1 = None
             self.expr2 = None
-        else:
             self._parse(s)
+        elif isinstance(s, Expression.Atom):
+            self.data = s
+            self.expr1 = expr1
+            self.expr2 = expr2
+        elif isinstance(s, Function):
+            self.data = Expression.Atom(s)
+            self.expr1 = expr1
+            self.expr2 = expr2
+        else:
+            raise Exception("Argument of type %s not supported by Expression's constructor" % type(s))
 
-    # Source: https://stavshamir.github.io/python/2018/05/26/overloading-constructors-in-python.html
-    @classmethod
-    def from_sub_exprs(cls, expr1, operator, expr2): #Make an expression from operator and sub-expressions
-        expr = Expression()
-        expr.expr1 = expr1
-        expr.data = operator
-        expr.expr2 = expr2
-        return expr
+        self._simplify()
 
     def __add__(self, expr):
-        expr = Expression.from_sub_exprs(self, '+', expr)
-        expr._simplify()
+        expr = Expression(Expression.Atom('+'), self, expr)
         return expr
 
     def __sub__(self, expr):
-        expr = Expression.from_sub_exprs(self, '-', expr)
-        expr._simplify()
+        expr = Expression(Expression.Atom('-'), self, expr)
         return expr
 
     def __mul__(self, expr):
-        expr = Expression.from_sub_exprs(self, '*', expr)
-        expr._simplify()
+        expr = Expression(Expression.Atom('*'), self, expr)
         return expr
 
     def __truediv__(self, expr):
-        # Checking foir division by zero
-        expr._simplify()
-        if expr._is_atomic() and expr.data == '0':
+        # Checking for division by zero
+        if expr._is_atomic() and str(expr.data) == '0':
             raise Exception("Division by zero!")
         
-        expr = Expression.from_sub_exprs(self, '/', expr)
-        expr._simplify()
+        expr = Expression(Expression.Atom('/'), self, expr)
         return expr
 
     def __pow__(self, expr):
-        expr = Expression.from_sub_exprs(self, '^', expr)
-        expr._simplify()
+        expr = Expression(Expression.Atom('^'), self, expr)
         return expr
 
     # https://www.journaldev.com/22460/python-str-repr-functions
@@ -118,13 +126,13 @@ class Expression:
             while i < len(s) and self._valid_name_char(s[i]):
                 i += 1
             
-            expr = Expression.from_sub_exprs(None, Expression.Atom(s[begin:i]), None)
+            expr = Expression(Expression.Atom(s[begin:i]))
 
-            if i != len(s) - 1 and s[i] == '(': # Atomic expression
+            if i != len(s) - 1 and s[i] == '(': # Function
                 arg, i2 = self._find_sub_expr(s, i+1) #assert: s[i+1..i2-1] is an expression
                 if s[i2] != ')':
                     raise Exception("Closing parentheses missing")
-                expr = Expression(Expression.Atom(Function(expr.data, arg)))
+                expr = Expression(Function(str(expr.data), arg))
                 i = i2 + 1
 
         elif s[begin].isdigit():
@@ -133,7 +141,7 @@ class Expression:
             #INV: a[begin..i-1] is a number, begin <= i <= len(s) - 1
             while i < len(s) and s[i].isdigit():
                 i += 1
-            expr = Expression.from_sub_exprs(None, Expression.Atom(s[begin:i]), None)
+            expr = Expression(Expression.Atom(s[begin:i]))
 
         elif s[begin] == '(':
             i = begin + 1
@@ -151,48 +159,6 @@ class Expression:
             raise Exception("Unable to parse: '" + s + "'")
 
         return expr, i
-
-    """ # Breaks s into parts. s should not have spaces
-    # The parts would be sub-expressions and operators.
-    # Raises an expection if parens are not added / mismatched
-    # E.g. ((2*x)+y) would give [(2*x), +, y]
-    # ((2*y)*sin(x)) would give [(2*y), *, sin(x)]
-    #                                      ^ Function object
-    def _separate(self, s):
-        if s[0] != '(':
-            i=0
-        elif s[-1] != ')': #assert: s[0] == '('
-            return Exception("Matching right bracket not found in '" + s + "'")
-        else:
-            i = 1
-
-        i1 = self._find_sub_expr(s, i) #assert: s[i..i1-1] is a expression 
-        
-        if i1 == len(s) - i: # Atomic expression
-            return [s[i:i1-i]]
-
-        if s[i1] == '(': # Must be a function
-            i2 = self._find_sub_expr(s, i1+1) #assert: s[i1+1..i2-1] is an expression
-            if s[i2] != ')':
-                raise Exception("Closing parentheses missing")
-            expr1 = Function(s[1:i1], Expression(s[i1:i2+1]))
-            
-            if i2 + 1 == len(s) - i: # Only one function in the expression
-                return [expr1]
-        else:
-            i2 = i1-1
-            expr1 = s[1:i1]
-        
-        operator = s[i2 + 1] #TODO: Add support for multi-character operators
-
-        i3 = self._find_sub_expr(s, i2+2) #assert: s[i2+2..i3-1] is an expression
-
-        if i3 != len(s) - i:
-            raise Exception("Malformed expression: '" + s + "'")
-        
-        return [expr1,
-        operator,
-        s[i2+2:i3]] """
 
     # Expression is taken as:
     # 1. (expr1 op expr2)
@@ -216,7 +182,7 @@ class Expression:
         expr1, i1 = self._find_sub_expr(s, i) #assert: expr1 = parsed s[i..i1-1]
         
         if i1 == len(s) - i: # Atomic expression
-            self._set_data(Expression.Atom(expr1))
+            self._set(expr1)
             return
 
         if s[i1] == '(': # Must be a function
@@ -244,9 +210,6 @@ class Expression:
 
     def _is_atomic(self):
         return self.expr1 == None and self.expr2 == None
-
-    """ def _is_const_wrt(self, var):
-        return self.data != var """
     
     #returns (expr1, operator, expr2)
     def _get_sub_exprs(self):
@@ -267,7 +230,7 @@ class Expression:
                 return (expr2 * expr1.differentiate_wrt(x) - expr1 * expr2.differentiate_wrt(x)) / (expr2 * expr2)
             elif operator.data == '^':
                 return expr2 * expr1 ** (expr2 - Expression("1")) * expr1.differentiate_wrt(x) + \
-                expr1 ** expr2 * Expression.from_sub_exprs(None, Function("log", expr1), None) * expr2.differentiate_wrt(x)
+                expr1 ** expr2 * Expression(Function("log", expr1)) * expr2.differentiate_wrt(x)
             else:
                 raise Exception("Operator %s not supported!" % operator)
 
@@ -281,35 +244,44 @@ class Expression:
 
     def _simplify(self):
         if self.expr1 != None and self.expr2 != None:
-            self.expr1._simplify()
-            self.expr2._simplify()
+            operator = str(self.data)
+            expr1 = str(self.expr1.data)
+            expr2 = str(self.expr2.data)
 
-            if self.data == '*':
-                if str(self.expr1.data) == '0' or str(self.expr2.data) == '0':
+            if operator == '*':
+                if expr1 == '0' or expr2 == '0':
                     self._set(Expression('0'))
-                elif str(self.expr1.data) == '1':
+                elif expr1 == '1':
                     self._set(self.expr2)
-                elif str(self.expr2.data) == '1':
+                elif expr2 == '1':
                     self._set(self.expr1)
-            elif self.data == '+':
-                if str(self.expr1.data) == '0':
+            elif operator == '+':
+                if expr1 == '0':
                     self._set(self.expr2)
-                elif str(self.expr2.data) == '0':
+                elif expr2 == '0':
                     self._set(self.expr1)
-            elif self.data == '-':
-                if self.expr2.data == '0':
+            elif operator == '-':
+                if str(self.expr2.data) == '0':
                     self._set(self.expr1)
                 elif self.expr1._is_atomic() and self.expr2._is_atomic() and self.expr1.data == self.expr2.data:
                     self._set(Expression('0'))
-            elif self.data == '/':
-                if self.expr1.data == '0':
+            elif operator == '/':
+                if str(self.expr1.data) == '0':
                     self._set(Expression('0'))
-                elif self.expr2.data == '0':
+                elif str(self.expr2.data) == '0':
                     raise Exception("Division by zero!")
+            elif operator == '^':
+                if str(self.expr1.data) == '1':
+                    self._set(Expression('1'))
+                elif str(self.expr1.data) == '0':
+                    self._set(Expression('0'))
+                elif str(self.expr2.data) == '0':
+                    self._set(Expression('1'))
+                elif str(self.expr2.data) == '1':
+                    self._set(self.expr1)
 
 s = input("Enter an expression: ")
 e = Expression(s)
 print(e)
 e_diff = e.differentiate_wrt('x')
-e_diff._simplify()
 print(e_diff)
