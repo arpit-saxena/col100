@@ -134,12 +134,13 @@ class Expression:
             
             expr = Expression(Expression.Atom(s[begin:i]))
 
-            if i != len(s) - 1 and s[i] == '(': # Function
-                arg, i2 = self._find_sub_expr(s, i+1) #assert: s[i+1..i2-1] is an expression
-                if s[i2] != ')':
+            if i < len(s) - 1 and s[i] == '(': # Function
+                arg, i2 = self._find_sub_expr(s, i) #assert: s[i..i2-1] is an expression
+                    #NOTE: s[i..] is an expression, so needs a paren in beginning
+                if s[i2-1] != ')':
                     raise Exception("Closing parentheses missing")
                 expr = Expression(Function(str(expr.data), arg))
-                i = i2 + 1
+                i = i2
 
         elif s[begin].isdigit() or s[begin] == '.':
             i = begin + 1
@@ -177,7 +178,6 @@ class Expression:
     def _parse(self, s):
         s = "".join(filter(lambda x : not x.isspace(), s))
         #assert: spaces from s have been removed
-        #tokens = self._separate(s)
 
         self.data = Expression.Atom("")
         self.expr1 = None
@@ -190,29 +190,19 @@ class Expression:
         else:
             i = 1
 
+        #assert: i = 1 <=> s[0] == '('
+
         expr1, i1 = self._find_sub_expr(s, i) #assert: expr1 = parsed s[i..i1-1]
         
         if i1 == len(s) - i: # Atomic expression
             self._set(expr1)
             return
-
-        if s[i1] == '(': # Must be a function
-            arg, i2 = self._find_sub_expr(s, i1+1) #assert: arg = parsed s[i1+1..i2-1]
-            if s[i2] != ')':
-                raise Exception("Closing parentheses missing")
-            expr1 = Function(expr1.data, arg)
-            
-            if i2 + 1 == len(s) - i: # Only one function in the expression
-                self._set_data(Expression.Atom(expr1))
-                return
-        else:
-            i2 = i1-1
         
-        operator = Expression.Atom(s[i2 + 1]) #Only single character operators are supported
+        operator = Expression.Atom(s[i1]) #Only single character operators are supported
 
-        expr2, i3 = self._find_sub_expr(s, i2+2) #assert: expr2 = parsed s[i2+2..i3-1]
+        expr2, i2 = self._find_sub_expr(s, i1 + 1) #assert: expr2 = parsed s[i1+1..i2-1]
 
-        if i3 != len(s) - i:
+        if i2 != len(s) - i:
             raise Exception("Malformed expression: '" + s + "'")
         
         self.data = operator
